@@ -521,6 +521,10 @@ public class Database implements DataHandler {
         FileStore store = FileStore.open(this, name, openMode, cipher,
                 filePasswordHash);
         try {
+            PageStore pageStore = this.pageStore;
+            if (pageStore != null) {
+                pageStore.lockFile(store, name);
+            }
             store.init();
         } catch (DbException e) {
             store.closeSilently();

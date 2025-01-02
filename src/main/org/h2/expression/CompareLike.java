@@ -254,7 +254,6 @@ public class CompareLike extends Condition {
         String value = l.getString();
         boolean result;
         if (regexp) {
-            // result = patternRegexp.matcher(value).matches();
             result = patternRegexp.matcher(value).find();
         } else {
             result = compareAt(value, 0, 0, value.length(), patternChars, patternTypes);

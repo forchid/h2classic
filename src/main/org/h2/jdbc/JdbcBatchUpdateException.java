@@ -28,6 +28,16 @@ public class JdbcBatchUpdateException extends BatchUpdateException {
 
     /**
      * INTERNAL
+     * @param next exception
+     * @param updateCounts affected record counts
+     */
+    JdbcBatchUpdateException(SQLException next, long[] updateCounts) {
+        super(next.getMessage(), next.getSQLState(), next.getErrorCode(), updateCounts, null);
+        setNextException(next);
+    }
+
+    /**
+     * INTERNAL
      */
     @Override
     public void printStackTrace() {

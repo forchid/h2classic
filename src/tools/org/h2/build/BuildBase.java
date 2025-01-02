@@ -31,6 +31,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.jar.JarOutputStream;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
@@ -149,6 +152,21 @@ public class BuildBase {
 
     }
 
+    static final BlockingQueue<Process> KILLINGS = new ArrayBlockingQueue<>(1024);
+    static {
+        Runtime.getRuntime().addShutdownHook(new Thread(()-> {
+            try {
+                while (!KILLINGS.isEmpty()) {
+                    Process proc = KILLINGS.poll(200, TimeUnit.MILLISECONDS);
+                    if (proc == null) break;
+                    if (proc.isAlive()) proc.destroy();
+                }
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }, "proc-killer"));
+    }
+
     /**
      * The output stream (System.out).
      */
@@ -158,6 +176,12 @@ public class BuildBase {
      * If output should be disabled.
      */
     protected boolean quiet;
+
+    /**
+     * The full path to the executable of the current JRE.
+     */
+    protected final String javaExecutable = System.getProperty("java.home") +
+            File.separator + "bin" + File.separator + "java";
 
     /**
      * This method should be called by the main method.
@@ -300,7 +324,7 @@ public class BuildBase {
 
     /**
      * Execute a script in a separate process.
-     * In Windows, the batch file with this name (.bat) is run.
+     * In Windows, the batch file with this name (.bat or .cmd) is run.
      *
      * @param script the program to run
      * @param args the command line parameters
@@ -308,7 +332,11 @@ public class BuildBase {
      */
     protected int execScript(String script, StringList args) {
         if (isWindows()) {
-            script = script + ".bat";
+            StringList newArgs = new StringList();
+            newArgs.add("/C");
+            newArgs.add(script);
+            newArgs.addAll(args);
+            return exec("cmd", newArgs);
         }
         return exec(script, args);
     }
@@ -337,11 +365,23 @@ public class BuildBase {
             pb.redirectErrorStream(true);
             Process p = pb.start();
             copyInThread(p.getInputStream(), quiet ? null : sysOut);
+            KILLINGS.put(p);
             p.waitFor();
             return p.exitValue();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Execute java in a separate process, but using the java executable of the
+     * current JRE.
+     *
+     * @param args the command line parameters for the java command
+     * @return the exit value
+     */
+    protected int execJava(StringList args) {
+        return exec(javaExecutable, args);
     }
 
     private static void copyInThread(final InputStream in, final OutputStream out) {
@@ -541,7 +581,7 @@ public class BuildBase {
      */
     protected void downloadUsingMaven(String target, String group,
             String artifact, String version, String sha1Checksum) {
-        String repoDir = "http://repo1.maven.org/maven2";
+        String repoDir = "https://repo1.maven.org/maven2";
         File targetFile = new File(target);
         if (targetFile.exists()) {
             return;

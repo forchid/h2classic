@@ -822,12 +822,10 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData {
      * @param columnIndex the column index (1, 2, ...)
      * @param type the class of the returned value
      */
-/*## Java 1.7 ##
     @Override
     public <T> T getObject(int columnIndex, Class<T> type) {
         return null;
     }
-//*/
 
     /**
      * INTERNAL
@@ -835,12 +833,10 @@ public class SimpleResultSet implements ResultSet, ResultSetMetaData {
      * @param columnName the column name
      * @param type the class of the returned value
      */
-/*## Java 1.7 ##
     @Override
     public <T> T getObject(String columnName, Class<T> type) {
         return null;
     }
-//*/
 
     /**
      * INTERNAL

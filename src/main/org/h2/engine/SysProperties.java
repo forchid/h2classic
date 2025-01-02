@@ -107,6 +107,13 @@ public class SysProperties {
             Utils.getProperty("h2.enableAnonymousSSL", true);
 
     /**
+     * System property <code>h2.useSysSSLKeyStore</code> (default: true).
+     * And if no system SSL keystore given, then use h2 default keystore.
+     */
+    public static final boolean USE_SYS_SSL_KEYSTORE =
+            Utils.getProperty("h2.useSysSSLKeyStore", true);
+
+    /**
      * System property <code>h2.bindAddress</code> (default: null).<br />
      * The bind address to use.
      */

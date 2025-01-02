@@ -1356,12 +1356,12 @@ public class Function extends Expression implements FunctionCall {
                 result = ValueString.get(
                         v0.getString().replaceAll(regexp, replacement),
                         database.getMode().treatEmptyStringsAsNull);
-            } catch (StringIndexOutOfBoundsException e) {
-                throw DbException.get(
-                        ErrorCode.LIKE_ESCAPE_ERROR_1, e, replacement);
             } catch (PatternSyntaxException e) {
                 throw DbException.get(
                         ErrorCode.LIKE_ESCAPE_ERROR_1, e, regexp);
+            } catch (StringIndexOutOfBoundsException | IllegalArgumentException e) {
+                throw DbException.get(
+                        ErrorCode.LIKE_ESCAPE_ERROR_1, e, replacement);
             }
             break;
         }

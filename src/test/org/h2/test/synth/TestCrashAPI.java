@@ -25,12 +25,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Savepoint;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import org.h2.api.ErrorCode;
 import org.h2.jdbc.JdbcConnection;
@@ -61,9 +56,8 @@ public class TestCrashAPI extends TestBase implements Runnable {
 
     private static final String DIR = "synth";
 
-    private final ArrayList<Object> objects = New.arrayList();
-    private final HashMap<Class <?>, ArrayList<Method>> classMethods =
-            New.hashMap();
+    private final List<Object> objects = New.arrayList();
+    private final Map<Class <?>, List<Method>> classMethods = New.hashMap();
     private RandomGen random = new RandomGen();
     private final ArrayList<String> statements = New.arrayList();
     private int openCount;
@@ -286,17 +280,9 @@ public class TestCrashAPI extends TestBase implements Runnable {
         random.setSeed(seed);
         Connection c1 = getConnection(seed, true);
         Connection conn = null;
+        List<RuntimeException> unsupportedOps = new ArrayList<>();
         for (int i = 0; i < 2000 && !stopped; i++) {
-            // if(i % 10 == 0) {
-            // for(int j=0; j<objects.size(); j++) {
-            // System.out.print(objects.get(j));
-            // System.out.print(" ");
-            // }
-            // System.out.println();
-            // Thread.sleep(1);
-            // }
-
-            if (objects.size() == 0) {
+            if (objects.isEmpty()) {
                 try {
                     conn = getConnection(seed, false);
                 } catch (SQLException e) {
@@ -309,12 +295,12 @@ public class TestCrashAPI extends TestBase implements Runnable {
                             break;
                         }
                         try {
-long start = System.currentTimeMillis();
+                            long start = System.currentTimeMillis();
                             conn = getConnection(seed, false);
-long connectTime = System.currentTimeMillis() - start;
-if (connectTime > 2000) {
-    System.out.println("??? connected2 in " + connectTime);
-}
+                            long connectTime = System.currentTimeMillis() - start;
+                            if (connectTime > 2000) {
+                                System.out.println("??? connected2 in " + connectTime);
+                            }
                         } catch (Throwable t) {
                             printIfBad(seed, -i, -1, t);
                         }
@@ -341,13 +327,26 @@ if (connectTime > 2000) {
                 continue;
             }
             Class<?> in = getJdbcInterface(o);
-            ArrayList<Method> methods = classMethods.get(in);
+            List<Method> methods = classMethods.get(in);
             Method m = methods.get(random.getInt(methods.size()));
-            Object o2 = callRandom(seed, i, objectId, o, m);
-            if (o2 != null) {
-                objects.add(o2);
+            try {
+                Object o2 = callRandom(seed, i, objectId, o, m);
+                if (o2 != null) {
+                    objects.add(o2);
+                }
+            } catch (RuntimeException e) {
+                Throwable cause = e.getCause();
+                if (cause instanceof UnsupportedOperationException) {
+                    unsupportedOps.add(e);
+                } else {
+                    throw e;
+                }
             }
         }
+        if (!unsupportedOps.isEmpty()) {
+            throw unsupportedOps.get(0);
+        }
+
         try {
             if (conn != null) {
                 conn.close();
@@ -509,14 +508,50 @@ if (connectTime > 2000) {
 
     private void initMethods() {
         for (Class<?> inter : INTERFACES) {
-            classMethods.put(inter, new ArrayList<Method>());
+            List<Method> methods = filterMethods(inter);
+            classMethods.put(inter, methods);
         }
-        for (Class<?> inter : INTERFACES) {
-            ArrayList<Method> list = classMethods.get(inter);
-            for (Method m : inter.getMethods()) {
-                list.add(m);
+    }
+
+    List<Method> filterMethods(Class<?> inter) {
+        // Temporarily skip the new api in JDBC 4.2(Java 8)
+        List<Method> filter = new ArrayList<>();
+        for (Method method: inter.getMethods()) {
+            String clazz = inter.getName();
+            String name = method.getName();
+            if (Statement.class.isAssignableFrom(inter)) {
+                switch (name) {
+                    case "setLargeMaxRows":
+                    case "executeLargeUpdate":
+                    case "executeLargeBatch":
+                    case "getLargeUpdateCount":
+                        printTime("Temporarily skip "+ clazz + "."+ name + "()");
+                        continue;
+                }
             }
+            if (PreparedStatement.class.isAssignableFrom(inter)) {
+                if (name.equals("setObject")) {
+                    printTime("Temporarily skip "+ clazz + "."+ name + "()");
+                    continue;
+                }
+            }
+            if (CallableStatement.class.isAssignableFrom(inter)) {
+                if (name.equals("registerOutParameter")) {
+                    printTime("Temporarily skip "+ clazz + "."+ name + "()");
+                    continue;
+                }
+            }
+
+            if (ResultSet.class.isAssignableFrom(inter)) {
+                if (name.equals("updateObject")) {
+                    printTime("Temporarily skip "+ clazz + "."+ name + "()");
+                    continue;
+                }
+            }
+
+            filter.add(method);
         }
+        return filter;
     }
 
     @Override

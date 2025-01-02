@@ -17,9 +17,7 @@ import org.h2.message.DbException;
 import org.h2.message.TraceSystem;
 import org.h2.upgrade.DbUpgrade;
 
-/*## Java 1.7 ##
 import java.util.logging.Logger;
-//*/
 
 /**
  * The database driver. An application should not use this class directly. The
@@ -37,8 +35,7 @@ public class Driver implements java.sql.Driver {
 
     private static final Driver INSTANCE = new Driver();
     private static final String DEFAULT_URL = "jdbc:default:connection";
-    private static final ThreadLocal<Connection> DEFAULT_CONNECTION =
-            new ThreadLocal<Connection>();
+    private static final ThreadLocal<Connection> DEFAULT_CONNECTION = new ThreadLocal<>();
 
     private static volatile boolean registered;
 
@@ -145,11 +142,9 @@ public class Driver implements java.sql.Driver {
     /**
      * [Not supported]
      */
-/*## Java 1.7 ##
     public Logger getParentLogger() {
         return null;
     }
-//*/
 
     /**
      * INTERNAL

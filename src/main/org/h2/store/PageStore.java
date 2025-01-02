@@ -301,7 +301,6 @@ public class PageStore implements CacheWriter {
         setPageSize(pageSize);
         freeListPagesPerList = PageFreeList.getPagesAddressed(pageSize);
         file = database.openFile(fileName, accessMode, false);
-        lockFile();
         recoveryRunning = true;
         writeStaticHeader();
         writeVariableHeader();
@@ -315,8 +314,8 @@ public class PageStore implements CacheWriter {
         increaseFileSize();
     }
 
-    private void lockFile() {
-        if (lockFile) {
+    public void lockFile(FileStore file, String name) {
+        if (lockFile && this.fileName.equals(name)) {
             if (!file.tryLock()) {
                 throw DbException.get(
                         ErrorCode.DATABASE_ALREADY_OPEN_1, fileName);
@@ -341,7 +340,7 @@ public class PageStore implements CacheWriter {
             }
             throw e;
         }
-        lockFile();
+        
         readStaticHeader();
         freeListPagesPerList = PageFreeList.getPagesAddressed(pageSize);
         fileLength = file.length();

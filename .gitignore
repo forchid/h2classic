@@ -1,2 +1,13 @@
+*.class
 *.db
 *.log
+*.iml
+.idea/
+bin/
+data/
+docs/
+ext/
+target/
+temp/
+error.txt
+test.out.txt

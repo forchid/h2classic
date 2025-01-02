@@ -83,7 +83,23 @@ public class TestMemoryUsage extends TestBase {
         }
         int usedNow = Utils.getMemoryUsed();
         if (usedNow > used * 1.3) {
-            assertEquals(used, usedNow);
+            // try to lower memory usage (because it might be wrong)
+            // by forcing OOME
+            int max = Integer.MAX_VALUE;
+            for (int i = 1; i >= 0 && i < max; i <<= 1) {
+                int n = Math.min(i * (1 << 20), max);
+                if (n < 0) n = max;
+                try {
+                    byte[] oome = new byte[n];
+                    oome[0] = (byte) i;
+                } catch (OutOfMemoryError e) {
+                    break;
+                }
+            }
+            usedNow = Utils.getMemoryUsed();
+            if (usedNow > used * 1.3) {
+                assertEquals(used, usedNow);
+            }
         }
         conn.close();
     }

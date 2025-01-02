@@ -133,7 +133,7 @@ public class Transfer {
      *
      * @return the value
      */
-    private byte readByte() throws IOException {
+    public byte readByte() throws IOException {
         return in.readByte();
     }
 
@@ -739,9 +739,9 @@ public class Transfer {
     public Transfer openNewConnection() throws IOException {
         InetAddress address = socket.getInetAddress();
         int port = socket.getPort();
-        Socket s2 = NetUtils.createSocket(address, port, ssl);
+        Socket newConn = NetUtils.createSocket(address, port, ssl);
         Transfer trans = new Transfer(null);
-        trans.setSocket(s2);
+        trans.setSocket(newConn);
         trans.setSSL(ssl);
         return trans;
     }

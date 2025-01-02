@@ -738,7 +738,22 @@ public class Build extends BuildBase {
     public void test() {
         downloadTest();
         String testClass = System.getProperty("test", "org.h2.test.TestAll");
-        java(testClass, null);
+        String cp = "temp" +
+                File.pathSeparator + "ext/slf4j-api-1.6.0.jar" +
+                File.pathSeparator + "ext/servlet-api-2.4.jar" +
+                File.pathSeparator + "ext/lucene-core-3.0.2.jar" +
+                File.pathSeparator + "ext/org.osgi.core-4.2.0.jar" +
+                File.pathSeparator + "ext/org.osgi.enterprise-4.2.0.jar" +
+                File.pathSeparator + "ext/jts-1.13.jar" +
+                File.pathSeparator + System.getProperty("java.home") + "/../lib/tools.jar";
+        int ret = execJava(args(
+                "-ea",
+                "-Xmx128m",
+                "-cp", cp,
+                testClass));
+        if (ret != 0) {
+            System.exit(ret);
+        }
     }
 
     /**

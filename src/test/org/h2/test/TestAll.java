@@ -592,7 +592,7 @@ kill -9 `jps -l | grep "org.h2.test." | cut -d " " -f 1`
      */
     private void test() throws SQLException {
         System.out.println();
-        System.out.println("Test " + toString() +
+        System.out.println("Test " + this +
                 " (" + Utils.getMemoryUsed() + " KB used)");
         beforeTest();
 

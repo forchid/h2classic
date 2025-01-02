@@ -9,6 +9,8 @@ package org.h2.message;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.Map;
+
+import org.h2.api.ErrorCode;
 import org.h2.util.StringUtils;
 
 /**
@@ -106,6 +108,8 @@ public class TraceObject {
     private static final String[] PREFIX = { "call", "conn", "dbMeta", "prep",
             "rs", "rsMeta", "sp", "ex", "stat", "blob", "clob", "pMeta", "ds",
             "xads", "xares", "xid", "ar" };
+            
+    private static final SQLException SQL_OOME = DbException.SQL_OOME;
 
     /**
      * The trace module used by this object.
@@ -361,24 +365,36 @@ public class TraceObject {
         }
         return "new Map() /* " + map.toString() + " */";
     }
-
+    
     /**
      * Log an exception and convert it to a SQL exception if required.
      *
      * @param ex the exception
      * @return the SQL exception object
      */
-    protected SQLException logAndConvert(Exception ex) {
-        SQLException e = DbException.toSQLException(ex);
-        if (trace == null) {
-            TraceSystem.traceThrowable(e);
-        } else {
-            int errorCode = e.getErrorCode();
-            if (errorCode >= 23000 && errorCode < 24000) {
-                trace.info(e, "exception");
+    protected SQLException logAndConvert(Throwable ex) {
+        SQLException e = null;
+        try {
+            e = DbException.toSQLException(ex);
+            if (trace == null) {
+                TraceSystem.traceThrowable(e);
             } else {
-                trace.error(e, "exception");
+                int errorCode = e.getErrorCode();
+                if (errorCode >= 23000 && errorCode < 24000) {
+                    trace.info(e, "exception");
+                } else {
+                    trace.error(e, "exception");
+                }
             }
+        } catch(Throwable another) {
+            if (e == null) {
+                try {
+                    e = new SQLException("GeneralError", "HY000", ErrorCode.GENERAL_ERROR_1, ex);
+                } catch (OutOfMemoryError | NoClassDefFoundError ignored) {
+                    return SQL_OOME;
+                }
+            }
+            e.addSuppressed(another);
         }
         return e;
     }

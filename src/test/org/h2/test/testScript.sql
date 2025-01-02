@@ -1516,7 +1516,34 @@ DROP TABLE TEST;
 > ok
 
 call 'a' regexp '\Ho.*';
-> exception
+> FALSE
+> -----
+> FALSE
+> rows: 1
+
+call 'H' regexp '\Ho.*';
+> FALSE
+> -----
+> FALSE
+> rows: 1
+
+call 'ho' regexp '\Ho.*';
+> TRUE
+> ----
+> TRUE
+> rows: 1
+
+call '\Ho' regexp '\Ho.*';
+> TRUE
+> ----
+> TRUE
+> rows: 1
+
+call '\Hoo' regexp '\Ho.*';
+> TRUE
+> ----
+> TRUE
+> rows: 1
 
 set @t = 0;
 > ok
@@ -9265,22 +9292,30 @@ select log(null) vn, log(1) v1, log(1.1) v2, log(-1.1) v3, log(1.9) v4, log(-1.9
 > null 0.0 0.09531017980432493 NaN 0.6418538861723947 NaN
 > rows: 1
 
-select degrees(null) vn, degrees(1) v1, degrees(1.1) v2, degrees(-1.1) v3, degrees(1.9) v4, degrees(-1.9) v5 from test;
-> VN   V1                V2                V3                 V4                 V5
-> ---- ----------------- ----------------- ------------------ ------------------ -------------------
-> null 57.29577951308232 63.02535746439057 -63.02535746439057 108.86198107485642 -108.86198107485642
+-- Truncate least significant digits because implementations returns slightly
+-- different results depending on Java version
+select degrees(null) vn, truncate(degrees(1), 10) v1, truncate(degrees(1.1), 10) v2,
+    truncate(degrees(-1.1), 10) v3, truncate(degrees(1.9), 10) v4,
+    truncate(degrees(-1.9), 10) v5;
+> VN   V1           V2            V3             V4             V5
+> ---- ------------ ------------- -------------- -------------- ---------------
+> null 57.295779513 63.0253574643 -63.0253574643 108.8619810748 -108.8619810748
 > rows: 1
 
-select exp(null) vn, exp(1) v1, exp(1.1) v2, exp(-1.1) v3, exp(1.9) v4, exp(-1.9) v5 from test;
-> VN   V1                 V2                 V3                 V4                 V5
-> ---- ------------------ ------------------ ------------------ ------------------ -------------------
-> null 2.7182818284590455 3.0041660239464334 0.3328710836980795 6.6858944422792685 0.14956861922263506
+select exp(null) vn, left(exp(1), 4) v1, left(exp(1.1), 4) v2, left(exp(-1.1), 4) v3, left(exp(1.9), 4) v4, left(exp(-1.9), 4) v5;
+> VN   V1   V2   V3   V4   V5
+> ---- ---- ---- ---- ---- ----
+> null 2.71 3.00 0.33 6.68 0.14
 > rows: 1
 
-select radians(null) vn, radians(1) v1, radians(1.1) v2, radians(-1.1) v3, radians(1.9) v4, radians(-1.9) v5 from test;
-> VN   V1                   V2                   V3                    V4                  V5
-> ---- -------------------- -------------------- --------------------- ------------------- --------------------
-> null 0.017453292519943295 0.019198621771937624 -0.019198621771937624 0.03316125578789226 -0.03316125578789226
+-- Truncate least significant digits because implementations returns slightly
+-- different results depending on Java version
+select radians(null) vn, truncate(radians(1), 10) v1, truncate(radians(1.1), 10) v2,
+    truncate(radians(-1.1), 10) v3, truncate(radians(1.9), 10) v4,
+    truncate(radians(-1.9), 10) v5;
+> VN   V1           V2           V3            V4           V5
+> ---- ------------ ------------ ------------- ------------ -------------
+> null 0.0174532925 0.0191986217 -0.0191986217 0.0331612557 -0.0331612557
 > rows: 1
 
 select sqrt(null) vn, sqrt(0) e0, sqrt(1) e1, sqrt(4) e2, sqrt(100) e10, sqrt(0.25) e05 from test;

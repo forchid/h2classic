@@ -26,9 +26,7 @@ import org.h2.jdbc.JdbcConnection;
 import org.h2.message.TraceObject;
 import org.h2.util.StringUtils;
 
-/*## Java 1.7 ##
 import java.util.logging.Logger;
-//*/
 
 /**
  * A data source for H2 database connections. It is a factory for XAConnection
@@ -426,12 +424,10 @@ public class JdbcDataSource extends TraceObject implements XADataSource,
     /**
      * [Not supported]
      */
-/*## Java 1.7 ##
     @Override
     public Logger getParentLogger() {
         return null;
     }
-//*/
 
     /**
      * INTERNAL

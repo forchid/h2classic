@@ -337,17 +337,20 @@ public class SourceCompiler {
     private static void javacSun(File javaFile) {
         PrintStream old = System.err;
         ByteArrayOutputStream buff = new ByteArrayOutputStream();
-        PrintStream temp = new PrintStream(buff);
         try {
-            System.setErr(temp);
+            String encoding = "UTF-8";
+            System.setErr(new PrintStream(buff, false, encoding));
             Method compile;
             compile = JAVAC_SUN.getMethod("compile", String[].class);
             Object javac = JAVAC_SUN.newInstance();
-            compile.invoke(javac, (Object) new String[] {
+            Integer status = (Integer)compile.invoke(javac, (Object) new String[] {
                     "-sourcepath", COMPILE_DIR,
                     "-d", COMPILE_DIR,
-                    "-encoding", "UTF-8",
+                    "-encoding", encoding,
                     javaFile.getAbsolutePath() });
+            if (0 == status) {
+                return;
+            }
             String err = new String(buff.toByteArray(), Constants.UTF8);
             throwSyntaxError(err);
         } catch (Exception e) {

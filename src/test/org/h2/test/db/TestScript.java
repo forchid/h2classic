@@ -98,7 +98,7 @@ public class TestScript extends TestBase {
         conn.close();
         out.close();
         if (errors.length() > 0) {
-            throw new Exception("errors:\n" + errors.toString());
+            throw new Exception("errors:\n" + errors);
         }
         // new File(outFile).delete();
     }

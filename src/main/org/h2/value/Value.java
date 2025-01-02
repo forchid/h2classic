@@ -165,12 +165,9 @@ public abstract class Value {
      */
     public static final int TYPE_COUNT = GEOMETRY + 1;
 
-    private static SoftReference<Value[]> softCache =
-            new SoftReference<Value[]>(null);
-    private static final BigDecimal MAX_LONG_DECIMAL =
-            BigDecimal.valueOf(Long.MAX_VALUE);
-    private static final BigDecimal MIN_LONG_DECIMAL =
-            BigDecimal.valueOf(Long.MIN_VALUE);
+    private static SoftReference<Value[]> softCache = new SoftReference<>(null);
+    private static final BigDecimal MAX_LONG_DECIMAL = BigDecimal.valueOf(Long.MAX_VALUE);
+    private static final BigDecimal MIN_LONG_DECIMAL = BigDecimal.valueOf(Long.MIN_VALUE);
 
     /**
      * Get the SQL expression for this value.

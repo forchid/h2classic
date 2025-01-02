@@ -968,6 +968,16 @@ public class Utils {
     }
 
     /**
+     * Create a new ArrayList with an initial capacity of 4.
+     *
+     * @param <T> the type
+     * @return the object
+     */
+    public static <T> ArrayList<T> newSmallArrayList() {
+        return new ArrayList<>(4);
+    }
+
+    /**
      * The utility methods will try to use the provided class factories to
      * convert binary name of class to Class object. Used by H2 OSGi Activator
      * in order to provide a class from another bundle ClassLoader.

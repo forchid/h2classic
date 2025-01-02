@@ -8,6 +8,7 @@ package org.h2.engine;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import org.h2.api.DatabaseEventListener;
 import org.h2.api.ErrorCode;
@@ -16,6 +17,7 @@ import org.h2.command.CommandInterface;
 import org.h2.command.CommandRemote;
 import org.h2.command.dml.SetTypes;
 import org.h2.jdbc.JdbcSQLException;
+import org.h2.jdbc.JdbcSQLNonTransientConnectionException;
 import org.h2.message.DbException;
 import org.h2.message.Trace;
 import org.h2.message.TraceSystem;
@@ -97,8 +99,8 @@ public class SessionRemote extends SessionWithState implements DataHandler {
 
     private Transfer initTransfer(ConnectionInfo ci, String db, String server)
             throws IOException {
-        Socket socket = NetUtils.createSocket(server,
-                Constants.DEFAULT_TCP_PORT, ci.isSSL());
+        int port = Constants.DEFAULT_TCP_PORT;
+        Socket socket = NetUtils.createSocket(server, port, ci.isSSL());
         Transfer trans = new Transfer(this);
         trans.setSocket(socket);
         trans.setSSL(ci.isSSL());
@@ -333,9 +335,14 @@ public class SessionRemote extends SessionWithState implements DataHandler {
             DbException e = DbException.convert(re);
             if (e.getErrorCode() == ErrorCode.DATABASE_ALREADY_OPEN_1) {
                 if (autoServerMode) {
-                    String serverKey = ((JdbcSQLException) e.getSQLException()).
-                            getSQL();
-                    if (serverKey != null) {
+                    SQLException se = e.getSQLException();
+                    String serverKey;
+                    if (se instanceof JdbcSQLNonTransientConnectionException) {
+                        serverKey = ((JdbcSQLNonTransientConnectionException)se).getSQL();
+                    } else {
+                        serverKey = ((JdbcSQLException)se). getSQL();
+                    }
+                    if (serverKey != null && backup != null) {
                         backup.setServerKey(serverKey);
                         // OPEN_NEW must be removed now, otherwise
                         // opening a session with AUTO_SERVER fails
@@ -424,8 +431,7 @@ public class SessionRemote extends SessionWithState implements DataHandler {
         // TODO cluster: support more than 2 connections
         boolean switchOffCluster = false;
         try {
-            for (int i = 0; i < len; i++) {
-                String s = servers[i];
+            for (String s : servers) {
                 try {
                     Transfer trans = initTransfer(ci, databaseName, s);
                     transferList.add(trans);
@@ -823,6 +829,41 @@ public class SessionRemote extends SessionWithState implements DataHandler {
             ci.close();
         }
         return javaObjectSerializerFQN;
+    }
+
+    /**
+     * Reads an exception.
+     *
+     * @param transfer
+     *            the transfer object
+     * @return the exception
+     * @throws IOException
+     *             on I/O exception
+     */
+    public static DbException readException(Transfer transfer) throws IOException {
+        return DbException.convert(readSQLException(transfer));
+    }
+
+    /**
+     * Reads an exception as SQL exception.
+     * @param transfer
+     *            the transfer object
+     * @return the exception
+     * @throws IOException
+     *             on I/O exception
+     */
+    public static SQLException readSQLException(Transfer transfer) throws IOException {
+        String sqlstate = transfer.readString();
+        String message = transfer.readString();
+        String sql = transfer.readString();
+        int errorCode = transfer.readInt();
+        String stackTrace = transfer.readString();
+        SQLException s = DbException.getJdbcSQLException(message, sql, sqlstate, errorCode, null, stackTrace);
+        if (errorCode == ErrorCode.CONNECTION_BROKEN_1) {
+            // allow re-connect
+            throw new IOException(s.toString(), s);
+        }
+        return s;
     }
 
     @Override

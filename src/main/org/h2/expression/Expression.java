@@ -159,6 +159,15 @@ public abstract class Expression {
     }
 
     /**
+     * Check if this is an identity column.
+     *
+     * @return true if it is an identity column
+     */
+    public boolean isIdentity() {
+        return false;
+    }
+
+    /**
      * Check if this is an auto-increment column.
      *
      * @return true if it is an auto-increment column

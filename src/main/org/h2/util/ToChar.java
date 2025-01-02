@@ -123,9 +123,7 @@ public class ToChar {
      * @param nlsParam the NLS parameter (if any)
      * @return the formatted number
      */
-    public static String toChar(BigDecimal number, String format,
-            String nlsParam) {
-
+    public static String toChar(BigDecimal number, String format, String nlsParam) {
         // short-circuit logic for formats that don't follow common logic below
         String formatUp = format != null ? format.toUpperCase() : null;
         if (formatUp == null || formatUp.equals("TM") || formatUp.equals("TM9")) {
@@ -576,20 +574,18 @@ public class ToChar {
      * @return the formatted timestamp
      */
     public static String toChar(Timestamp ts, String format, String nlsParam) {
-
         if (format == null) {
             format = "DD-MON-YY HH.MI.SS.FF PM";
         }
 
-        GregorianCalendar cal = new GregorianCalendar(Locale.ENGLISH);
+        Locale locale = getLocaleFromNlsParam(nlsParam, "NLS_DATE_LANGUAGE");
+        GregorianCalendar cal = new GregorianCalendar(locale);
         cal.setTimeInMillis(ts.getTime());
         StringBuilder output = new StringBuilder();
         boolean fillMode = true;
 
         for (int i = 0; i < format.length();) {
-
             Capitalization cap;
-
                 // AD / BC
 
             if ((cap = containsAt(format, i, "A.D.", "B.C.")) != null) {
@@ -615,13 +611,13 @@ public class ToChar {
                 // Long/short date/time format
 
             } else if ((cap = containsAt(format, i, "DL")) != null) {
-                output.append(new SimpleDateFormat("EEEE, MMMM d, yyyy").format(ts));
+                output.append(new SimpleDateFormat("EEEE, MMMM d, yyyy", locale).format(ts));
                 i += 2;
             } else if ((cap = containsAt(format, i, "DS")) != null) {
-                output.append(new SimpleDateFormat("MM/dd/yyyy").format(ts));
+                output.append(new SimpleDateFormat("MM/dd/yyyy", locale).format(ts));
                 i += 2;
             } else if ((cap = containsAt(format, i, "TS")) != null) {
-                output.append(new SimpleDateFormat("h:mm:ss aa").format(ts));
+                output.append(new SimpleDateFormat("h:mm:ss aa", locale).format(ts));
                 i += 2;
 
                 // Day
@@ -634,11 +630,11 @@ public class ToChar {
                         cal.get(Calendar.DAY_OF_MONTH)));
                 i += 2;
             } else if ((cap = containsAt(format, i, "DY")) != null) {
-                String day = new SimpleDateFormat("EEE").format(ts).toUpperCase();
+                String day = new SimpleDateFormat("EEE", locale).format(ts).toUpperCase();
                 output.append(cap.apply(day));
                 i += 2;
             } else if ((cap = containsAt(format, i, "DAY")) != null) {
-                String day = new SimpleDateFormat("EEEE").format(ts);
+                String day = new SimpleDateFormat("EEEE", locale).format(ts);
                 if (fillMode) {
                     day = StringUtils.pad(day, "Wednesday".length(), " ", true);
                 }
@@ -744,14 +740,14 @@ public class ToChar {
                 // Month / quarter
 
             } else if ((cap = containsAt(format, i, "MONTH")) != null) {
-                String month = new SimpleDateFormat("MMMM").format(ts);
+                String month = new SimpleDateFormat("MMMM", locale).format(ts);
                 if (fillMode) {
                     month = StringUtils.pad(month, "September".length(), " ", true);
                 }
                 output.append(cap.apply(month));
                 i += 5;
             } else if ((cap = containsAt(format, i, "MON")) != null) {
-                String month = new SimpleDateFormat("MMM").format(ts);
+                String month = new SimpleDateFormat("MMM", locale).format(ts);
                 output.append(cap.apply(month));
                 i += 3;
             } else if ((cap = containsAt(format, i, "MM")) != null) {
@@ -811,6 +807,27 @@ public class ToChar {
         }
 
         return output.toString();
+    }
+
+    private static Locale getLocaleFromNlsParam(String nlsParam, String paramName) {
+        if (nlsParam == null) {
+            return Locale.ENGLISH;
+        }
+
+        String param = nlsParam.toUpperCase(Locale.ENGLISH);
+        int i = param.indexOf(paramName);
+        if (i == -1) {
+            return Locale.ENGLISH;
+        }
+
+        i += paramName.length();
+        i = param.indexOf('=', i);
+        if (i == -1) {
+            return Locale.ENGLISH;
+        } else {
+            String lang = param.substring(++i).trim();
+            return Locale.forLanguageTag(lang);
+        }
     }
 
     private static int getYear(Calendar cal) {

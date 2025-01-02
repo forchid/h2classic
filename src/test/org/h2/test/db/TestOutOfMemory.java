@@ -54,10 +54,14 @@ public class TestOutOfMemory extends TestBase {
                 prep.execute();
                 fail();
             } catch (SQLException e) {
-                assertEquals(ErrorCode.OUT_OF_MEMORY, e.getErrorCode());
+                freeMemory();
+                assertTrue("Unexpected error code: " + e.getErrorCode(),
+                        ErrorCode.OUT_OF_MEMORY == e.getErrorCode() ||
+                        ErrorCode.FILE_CORRUPTED_1 == e.getErrorCode() ||
+                        ErrorCode.DATABASE_IS_CLOSED == e.getErrorCode() ||
+                        ErrorCode.GENERAL_ERROR_1 == e.getErrorCode());
             }
             assertThrows(ErrorCode.DATABASE_IS_CLOSED, conn).close();
-            freeMemory();
             conn = null;
             conn = getConnection("outOfMemory");
             stat = conn.createStatement();

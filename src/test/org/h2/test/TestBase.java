@@ -553,11 +553,6 @@ public abstract class TestBase {
      */
     protected void deleteDb(String dir, String name) {
         DeleteDbFiles.execute(dir, name, true);
-        // ArrayList<String> list;
-        // list = FileLister.getDatabaseFiles(baseDir, name, true);
-        // if (list.size() >  0) {
-        //    System.out.println("Not deleted: " + list);
-        // }
     }
 
     /**
